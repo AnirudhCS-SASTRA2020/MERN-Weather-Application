@@ -9,13 +9,13 @@ This document provides end-to-end diagrams for the major flows in the MERN Weath
 ## 1) System architecture (overview)
 
 ```mermaid
-flowchart LR
+graph LR
   U[User (Browser)] -->|React UI| FE[Frontend (Vite + React)]
   FE -->|Axios + Cookies| BE[Backend (Express API)]
   BE -->|Mongoose| DB[(MongoDB)]
-  BE -->|HTTP| OM[Open‑Meteo APIs]
+  BE -->|HTTP| OM[Open-Meteo APIs]
 
-  subgraph Open‑Meteo
+  subgraph open_meteo[Open-Meteo]
     OM --> GEO[Geocoding API]
     OM --> FC[Forecast API]
   end
@@ -73,7 +73,7 @@ sequenceDiagram
 ## 4) Auth flow (register / login / logout / me)
 
 ```mermaid
-flowchart TD
+graph TD
   A[Register] -->|POST /api/auth/register| B{Gmail address?}
   B -- No --> E[400 Only gmail.com accounts]
   B -- Yes --> C[Hash password + create user]
@@ -123,7 +123,7 @@ The backend:
 - Fetches current weather for those cities with a concurrency limit
 
 ```mermaid
-flowchart TD
+graph TD
   Q[Query city name] --> B[Base forecast lookup]
   B --> C[Base location: lat/lon + country code]
   C --> R[Select candidate cities within radius]
@@ -137,7 +137,7 @@ flowchart TD
 ## 7) Country flow (top cities by population)
 
 ```mermaid
-flowchart TD
+graph TD
   Q[Query city name] --> B[Base forecast lookup]
   B --> CC[Extract country code]
   CC --> TOP[Pick top N cities in that country (population)]
