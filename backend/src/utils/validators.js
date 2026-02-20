@@ -8,7 +8,13 @@ function isGmail(email) {
 }
 
 const registerSchema = z.object({
+  username: z.string().min(2).max(40),
   email: emailSchema,
+  phone: z
+    .string()
+    .min(7)
+    .max(20)
+    .regex(/^[+0-9()\-\s]{7,20}$/, 'Invalid phone number'),
   password: z.string().min(8).max(72),
 });
 

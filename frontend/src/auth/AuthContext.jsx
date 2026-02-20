@@ -22,8 +22,8 @@ export function AuthProvider({ children }) {
     refreshMe();
   }, [refreshMe]);
 
-  const register = useCallback(async ({ email, password }) => {
-    const { data } = await api.post('/api/auth/register', { email, password });
+  const register = useCallback(async ({ username, email, phone, password }) => {
+    const { data } = await api.post('/api/auth/register', { username, email, phone, password });
     setUser(data.user);
     return data.user;
   }, []);

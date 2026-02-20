@@ -6,10 +6,10 @@ export function CityMap({ location }) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/40 overflow-hidden">
-      <div className="p-4 border-b border-slate-800">
+    <div className="rounded-2xl border border-slate-200 bg-white/80 overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-slate-200">
         <div className="text-sm font-semibold">Map</div>
-        <div className="text-xs text-slate-400">Click marker for details</div>
+        <div className="text-xs text-slate-600">Click marker for details</div>
       </div>
       <div className="h-80">
         <MapContainer center={[lat, lon]} zoom={9} style={{ height: '100%', width: '100%' }}>

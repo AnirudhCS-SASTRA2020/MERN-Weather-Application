@@ -45,7 +45,7 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 | Path | Purpose |
 |---|---|
 | `backend/src/routes/authRoutes.js` | `/api/auth/*` endpoints: register, login, logout, me. |
-| `backend/src/routes/weatherRoutes.js` | `/api/weather/*` endpoints: public default, city forecast, region, country. |
+| `backend/src/routes/weatherRoutes.js` | `/api/weather/*` endpoints: public default, public city, city forecast, region, country. |
 | `backend/src/routes/historyRoutes.js` | `/api/history/*` endpoints: monthly snapshot aggregation. |
 
 ### Controllers (request handlers)
@@ -53,7 +53,7 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 | Path | Purpose |
 |---|---|
 | `backend/src/controllers/authController.js` | Auth logic: gmail check, password hashing, JWT cookie set/clear, `me` response. |
-| `backend/src/controllers/weatherController.js` | Weather endpoints for default (NYC) and authenticated city forecast. |
+| `backend/src/controllers/weatherController.js` | Weather endpoints for default (NYC), guest city forecast, and authenticated city forecast. |
 | `backend/src/controllers/aggregateController.js` | Region/Country endpoints: selects many cities and fetches current weather with concurrency limits. Uses `all-the-cities`. |
 | `backend/src/controllers/historyController.js` | Monthly endpoint: saves/reads daily snapshots and returns an aggregated view. |
 
@@ -68,7 +68,7 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 
 | Path | Purpose |
 |---|---|
-| `backend/src/models/User.js` | User schema (email + password hash). |
+| `backend/src/models/User.js` | User schema (username, email, phone + password hash). |
 | `backend/src/models/WeatherSnapshot.js` | Daily snapshot schema (per user + coords + date) used for Monthly view. |
 
 ### Services (external API + business logic)
@@ -126,7 +126,7 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 | `frontend/src/pages/Monthly.jsx` | Monthly view driven by snapshot aggregation endpoint. |
 | `frontend/src/pages/Region.jsx` | Multi-city “region” view using `/api/weather/region`. |
 | `frontend/src/pages/Country.jsx` | Multi-city “country” view using `/api/weather/country`. |
-| `frontend/src/pages/Login.jsx` | Login form + redirect/back behavior. |
+| `frontend/src/pages/Login.jsx` | Login form. |
 | `frontend/src/pages/Register.jsx` | Registration form (gmail-only enforced by backend). |
 
 ### Components
@@ -145,7 +145,7 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 | Path | Purpose |
 |---|---|
 | `frontend/src/hooks/useForecast.js` | Reusable fetch hook for forecast endpoints with loading/error state. |
-| `frontend/src/utils/storage.js` | LocalStorage helpers for active city and pending city search. |
+| `frontend/src/utils/storage.js` | LocalStorage helper for active city (and a legacy pending city key). |
 | `frontend/src/utils/units.js` | Shared numeric helpers (rounding + some unit conversions). |
 
 ### Styling and tooling

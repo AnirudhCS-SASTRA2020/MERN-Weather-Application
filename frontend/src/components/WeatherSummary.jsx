@@ -13,10 +13,10 @@ export function WeatherSummary({ data }) {
           <div className="text-2xl font-semibold">
             {loc?.name}{loc?.admin1 ? `, ${loc.admin1}` : ''}{loc?.country ? `, ${loc.country}` : ''}
           </div>
-          <div className="text-xs text-slate-400">Source: {data.source} • {new Date(data.fetchedAt).toLocaleString()}</div>
+          <div className="text-xs text-slate-600">Source: {data.source} • {new Date(data.fetchedAt).toLocaleString()}</div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-slate-400">Timezone</div>
+          <div className="text-xs text-slate-600">Timezone</div>
           <div className="text-sm">{data.timezone}</div>
         </div>
       </div>

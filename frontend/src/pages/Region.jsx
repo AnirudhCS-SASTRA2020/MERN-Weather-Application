@@ -42,24 +42,22 @@ export function Region() {
   }, [payload]);
 
   return (
-    <div className="p-6 max-w-6xl">
+    <div className="p-6 max-w-6xl mx-auto">
       <h1 className="text-2xl font-semibold">Region</h1>
-      <div className="text-xs text-slate-400 mt-1">Today summary for top cities in your selected region.</div>
+      <div className="text-xs text-slate-600 mt-1">Today summary for top cities in your selected region.</div>
 
       <div className="mt-4 grid gap-4">
         {error ? (
-          <div className="rounded-md border border-red-900 bg-red-950/40 p-3 text-sm text-red-200">{error}</div>
+          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>
         ) : null}
-        {loading ? <div className="text-sm text-slate-300">Loading…</div> : null}
+        {loading ? <div className="text-sm text-slate-700">Loading…</div> : null}
 
         {!loading ? (
           <>
             <BarChartCard title="Temperature (°C)" data={barData} barKey="temp" color="#38bdf8" />
             <BarChartCard title="Wind speed (m/s)" data={barData} barKey="wind" color="#a78bfa" />
             <MultiCityMap cities={payload?.cities} />
-            <div className="text-xs text-slate-500">
-              Note: Region/Country lists come from a small seeded city set for this demo.
-            </div>
+            <div className="text-xs text-slate-600">Note: City lists are best-effort and may vary by data coverage.</div>
           </>
         ) : null}
       </div>

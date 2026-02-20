@@ -49,7 +49,7 @@ sequenceDiagram
 
 ---
 
-## 3) Search redirect flow (guest → login → return)
+## 3) Guest city search flow
 
 ```mermaid
 sequenceDiagram
@@ -58,18 +58,10 @@ sequenceDiagram
   participant FE as Frontend
   participant BE as Backend
 
+  note over U,BE: Guest (no auth)
+
   U->>FE: Enter city + click Search (guest)
-  FE->>FE: Store pendingCity in localStorage
-  FE-->>U: Navigate to /login
-
-  U->>FE: Submit login
-  FE->>BE: POST /api/auth/login
-  BE-->>FE: Set httpOnly cookie + JSON user
-  FE->>BE: GET /api/auth/me (session restore)
-  BE-->>FE: JSON user
-
-  FE->>FE: Read pendingCity
-  FE->>BE: GET /api/weather/city?query=pendingCity
+  FE->>BE: GET /api/weather/public/city?query=City
   BE-->>FE: Weather payload
   FE-->>U: Dashboard renders searched city
 ```
@@ -88,7 +80,7 @@ sequenceDiagram
 
   note over U,BE: Register
   U->>FE: Submit register form
-  FE->>BE: POST /api/auth/register
+  FE->>BE: POST /api/auth/register (username,email,phone,password)
   BE->>BE: Validate gmail address
   alt Not gmail
     BE-->>FE: 400 Only gmail.com accounts

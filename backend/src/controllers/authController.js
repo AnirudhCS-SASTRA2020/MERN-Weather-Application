@@ -23,7 +23,7 @@ function signToken(user) {
 
 async function register(req, res, next) {
   try {
-    const { email, password } = registerSchema.parse(req.body);
+    const { username, email, phone, password } = registerSchema.parse(req.body);
 
     if (!isGmail(email)) {
       res.status(400);
@@ -37,13 +37,18 @@ async function register(req, res, next) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email: email.toLowerCase(), passwordHash });
+    const user = await User.create({
+      username: username.trim(),
+      email: email.toLowerCase(),
+      phone: phone.trim(),
+      passwordHash,
+    });
 
     const token = signToken(user);
     res.cookie(env.cookieName, token, buildCookieOptions());
 
     res.status(201).json({
-      user: { id: String(user._id), email: user.email },
+      user: { id: String(user._id), username: user.username, email: user.email, phone: user.phone },
     });
   } catch (err) {
     return next(err);
@@ -69,7 +74,7 @@ async function login(req, res, next) {
     const token = signToken(user);
     res.cookie(env.cookieName, token, buildCookieOptions());
 
-    res.json({ user: { id: String(user._id), email: user.email } });
+    res.json({ user: { id: String(user._id), username: user.username, email: user.email, phone: user.phone } });
   } catch (err) {
     return next(err);
   }
@@ -80,8 +85,25 @@ function logout(req, res) {
   res.json({ message: 'Logged out' });
 }
 
-function me(req, res) {
-  res.json({ user: { id: req.user.sub, email: req.user.email } });
+async function me(req, res, next) {
+  try {
+    const user = await User.findById(req.user.sub).select('username email phone');
+    if (!user) {
+      res.status(401);
+      throw new Error('Not authenticated');
+    }
+
+    res.json({
+      user: {
+        id: String(user._id),
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 module.exports = { register, login, logout, me };

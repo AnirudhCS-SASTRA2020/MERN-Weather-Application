@@ -14,7 +14,8 @@ Localhost MERN Weather application with authentication, charts, maps, and multip
 
 - Landing page (Dashboard) works without login
 - Shows **New York** by default
-- If a guest tries to search a city, the app redirects to **Login**, then returns and runs the search after successful auth
+- Guests can search any city and see live results (no login required)
+- Quick access buttons: **Login** and **Register**
 
 ### Authenticated mode
 
@@ -117,7 +118,7 @@ This starts:
 
 1. Open the app at `/`.
 2. You will see New York weather.
-3. Searching a city will redirect you to Login.
+3. Guests can search a city and see live results.
 
 ### Login / Register (Gmail-only)
 
@@ -130,7 +131,7 @@ After login/register:
 
 ### Searching cities
 
-Authenticated users can search any city name supported by Open‑Meteo geocoding.
+Both guests and authenticated users can search any city name supported by Open‑Meteo geocoding.
 
 ### Monthly data
 
@@ -151,7 +152,7 @@ Base URL: `http://localhost:5000`
 
 ### Auth
 
-- `POST /api/auth/register` → `{ email, password }`
+- `POST /api/auth/register` → `{ username, email, phone, password }`
 - `POST /api/auth/login` → `{ email, password }`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
@@ -159,6 +160,7 @@ Base URL: `http://localhost:5000`
 ### Weather
 
 - `GET /api/weather/public/default` (NYC, guest)
+- `GET /api/weather/public/city?query=London` (guest)
 - `GET /api/weather/city?query=London` (auth)
 - `GET /api/weather/region?query=London` (auth)
   - Picks nearby cities in the same country using a radius-based approach and returns current weather for each.

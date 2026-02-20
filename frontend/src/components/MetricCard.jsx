@@ -43,14 +43,14 @@ export function MetricCard({ label, kind, value, unit }) {
   const canToggle = kind === 'temp' || kind === 'wind' || kind === 'pressure' || kind === 'visibility' || kind === 'precip';
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+    <div className="rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs text-slate-400">{label}</div>
+        <div className="text-xs text-slate-600">{label}</div>
         {canToggle ? (
           <button
             type="button"
             onClick={() => setAlt((x) => !x)}
-            className="text-[11px] px-2 py-1 rounded-md border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-200"
+            className="text-[11px] px-2 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
             aria-label={`Toggle units for ${label}`}
           >
             {kind === 'temp'
@@ -78,7 +78,7 @@ export function MetricCard({ label, kind, value, unit }) {
 
       <div className="mt-1 text-lg font-semibold">
         {display.v}
-        {display.u ? <span className="text-sm text-slate-300"> {display.u}</span> : null}
+        {display.u ? <span className="text-sm text-slate-600"> {display.u}</span> : null}
       </div>
     </div>
   );

@@ -10,18 +10,18 @@ import {
 
 export function LineChartCard({ title, data, lines }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
       <div className="text-sm font-semibold">{title}</div>
       <div className="h-64 mt-3">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-            <XAxis dataKey="t" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-            <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="t" tick={{ fill: '#475569', fontSize: 12 }} />
+            <YAxis tick={{ fill: '#475569', fontSize: 12 }} />
             <Tooltip
-              contentStyle={{ background: '#0b1220', border: '1px solid #1f2937' }}
-              labelStyle={{ color: '#e2e8f0' }}
-              itemStyle={{ color: '#e2e8f0' }}
+              contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0' }}
+              labelStyle={{ color: '#0f172a' }}
+              itemStyle={{ color: '#0f172a' }}
             />
             {lines.map((l) => (
               <Line

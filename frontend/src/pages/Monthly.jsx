@@ -43,16 +43,16 @@ export function Monthly() {
   }, [payload]);
 
   return (
-    <div className="p-6 max-w-5xl">
+    <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Monthly</h1>
-          <div className="text-xs text-slate-400">Accumulates one snapshot per day as you use the app.</div>
+          <div className="text-xs text-slate-600">Accumulates one snapshot per day as you use the app.</div>
         </div>
         <select
           value={months}
           onChange={(e) => setMonths(Number(e.target.value))}
-          className="rounded-md bg-slate-900 border border-slate-800 px-2 py-2 text-xs outline-none focus:border-slate-600"
+          className="rounded-md bg-white/80 border border-slate-200 px-2 py-2 text-xs outline-none focus:border-sky-500 shadow-sm"
         >
           <option value={1}>1 month</option>
           <option value={2}>2 months</option>
@@ -62,13 +62,13 @@ export function Monthly() {
 
       <div className="mt-4 grid gap-4">
         {error ? (
-          <div className="rounded-md border border-red-900 bg-red-950/40 p-3 text-sm text-red-200">{error}</div>
+          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>
         ) : null}
 
-        {loading ? <div className="text-sm text-slate-300">Loading…</div> : null}
+        {loading ? <div className="text-sm text-slate-700">Loading…</div> : null}
 
         {!loading && !series.length ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-300">
+          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-700 shadow-sm">
             No snapshots yet for this city. Use the app daily and this view will populate automatically.
           </div>
         ) : null}
