@@ -9,16 +9,22 @@ This document provides end-to-end diagrams for the major flows in the MERN Weath
 ## 1) System architecture (overview)
 
 ```mermaid
-graph LR
-  U[User (Browser)] -->|React UI| FE[Frontend (Vite + React)]
-  FE -->|Axios + Cookies| BE[Backend (Express API)]
-  BE -->|Mongoose| DB[(MongoDB)]
-  BE -->|HTTP| OM[Open-Meteo APIs]
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant FE as Frontend
+  participant BE as Backend API
+  participant DB as MongoDB
+  participant OM as Open-Meteo
 
-  subgraph open_meteo[Open-Meteo]
-    OM --> GEO[Geocoding API]
-    OM --> FC[Forecast API]
-  end
+  U->>FE: Use the web app
+  FE->>BE: Call /api endpoints (cookies included)
+  BE->>DB: Read/write users and snapshots
+  BE->>OM: Fetch weather data (geocode + forecast)
+  OM-->>BE: Weather payload
+  DB-->>BE: Data result
+  BE-->>FE: Normalized JSON response
+  FE-->>U: Render UI (charts + maps)
 ```
 
 ---
@@ -73,22 +79,52 @@ sequenceDiagram
 ## 4) Auth flow (register / login / logout / me)
 
 ```mermaid
-graph TD
-  A[Register] -->|POST /api/auth/register| B{Gmail address?}
-  B -- No --> E[400 Only gmail.com accounts]
-  B -- Yes --> C[Hash password + create user]
-  C --> D[Set JWT in httpOnly cookie]
-  D --> OK[Return user JSON]
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant FE as Frontend
+  participant BE as Backend
+  participant DB as MongoDB
 
-  L[Login] -->|POST /api/auth/login| V{Valid credentials?}
-  V -- No --> X[401 Invalid credentials]
-  V -- Yes --> D
+  note over U,BE: Register
+  U->>FE: Submit register form
+  FE->>BE: POST /api/auth/register
+  BE->>BE: Validate gmail address
+  alt Not gmail
+    BE-->>FE: 400 Only gmail.com accounts
+    FE-->>U: Show error
+  else Gmail
+    BE->>DB: Create user (hash password)
+    DB-->>BE: User created
+    BE-->>FE: Set httpOnly JWT cookie + user JSON
+    FE-->>U: Logged in
+  end
 
-  M[Me] -->|GET /api/auth/me| K{Valid cookie JWT?}
-  K -- No --> U401[401 Not authenticated]
-  K -- Yes --> U200[200 user JSON]
+  note over U,BE: Login
+  U->>FE: Submit login form
+  FE->>BE: POST /api/auth/login
+  BE->>DB: Validate credentials
+  alt Invalid
+    BE-->>FE: 401 Invalid credentials
+    FE-->>U: Show error
+  else Valid
+    BE-->>FE: Set httpOnly JWT cookie + user JSON
+    FE-->>U: Logged in
+  end
 
-  O[Logout] -->|POST /api/auth/logout| CLR[Clear cookie]
+  note over U,BE: Session check
+  FE->>BE: GET /api/auth/me
+  alt No or invalid cookie
+    BE-->>FE: 401 Not authenticated
+  else Valid cookie
+    BE-->>FE: 200 user JSON
+  end
+
+  note over U,BE: Logout
+  U->>FE: Click logout
+  FE->>BE: POST /api/auth/logout
+  BE-->>FE: Clear cookie
+  FE-->>U: Logged out
 ```
 
 ---
@@ -123,13 +159,26 @@ The backend:
 - Fetches current weather for those cities with a concurrency limit
 
 ```mermaid
-graph TD
-  Q[Query city name] --> B[Base forecast lookup]
-  B --> C[Base location: lat/lon + country code]
-  C --> R[Select candidate cities within radius]
-  R --> P[Sort by population + de-duplicate]
-  P --> F[Fetch current weather for each city (concurrency limited)]
-  F --> OUT[Return list + map markers]
+sequenceDiagram
+  autonumber
+  participant FE as Frontend
+  participant BE as Backend
+  participant DS as City dataset
+  participant OM as Open-Meteo
+
+  FE->>BE: GET /api/weather/region?query=City
+  BE->>BE: requireAuth
+  BE->>OM: Geocode query city
+  OM-->>BE: Base city (lat, lon, country code)
+  BE->>DS: Filter cities in same country
+  DS-->>BE: Candidate cities
+  BE->>BE: Pick nearby cities within radius
+  BE->>BE: Sort by population and dedupe
+  loop For each selected city (limited concurrency)
+    BE->>OM: Fetch current weather for city coords
+    OM-->>BE: Current weather
+  end
+  BE-->>FE: List of cities + current + units
 ```
 
 ---
@@ -137,12 +186,25 @@ graph TD
 ## 7) Country flow (top cities by population)
 
 ```mermaid
-graph TD
-  Q[Query city name] --> B[Base forecast lookup]
-  B --> CC[Extract country code]
-  CC --> TOP[Pick top N cities in that country (population)]
-  TOP --> F[Fetch current weather for each city (concurrency limited)]
-  F --> OUT[Return list + map markers]
+sequenceDiagram
+  autonumber
+  participant FE as Frontend
+  participant BE as Backend
+  participant DS as City dataset
+  participant OM as Open-Meteo
+
+  FE->>BE: GET /api/weather/country?query=City
+  BE->>BE: requireAuth
+  BE->>OM: Geocode query city
+  OM-->>BE: Base city (country code)
+  BE->>DS: Get cities for that country
+  DS-->>BE: Candidate cities
+  BE->>BE: Pick top N by population
+  loop For each selected city (limited concurrency)
+    BE->>OM: Fetch current weather for city coords
+    OM-->>BE: Current weather
+  end
+  BE-->>FE: List of cities + current + units
 ```
 
 ---
