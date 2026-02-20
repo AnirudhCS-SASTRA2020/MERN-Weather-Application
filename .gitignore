@@ -4,9 +4,9 @@ backend/node_modules/
 frontend/node_modules/
 
 # Env / secrets
-.env
-backend/.env
-frontend/.env
+# .env
+# backend/.env
+# frontend/.env
 
 # Builds
 frontend/dist/
