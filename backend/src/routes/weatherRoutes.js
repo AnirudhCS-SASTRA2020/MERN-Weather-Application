@@ -3,6 +3,7 @@ const { publicDefault, publicCity, cityForecast } = require('../controllers/weat
 const { requireAuth } = require('../middleware/authMiddleware');
 const { regionToday, countryToday } = require('../controllers/aggregateController');
 
+
 const router = express.Router();
 
 router.get('/public/default', publicDefault);
