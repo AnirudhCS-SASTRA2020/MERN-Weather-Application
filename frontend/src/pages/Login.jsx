@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ export function Login() {
     <div className="min-h-screen grid place-items-center p-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/80 p-6 text-slate-900 shadow-sm">
         <h1 className="text-2xl font-semibold">Login</h1>
-        <p className="text-xs text-slate-600 mt-1">Use your gmail.com account</p>
+        <p className="text-xs text-slate-600 mt-1">Sign in to access saved features</p>
 
         <form onSubmit={onSubmit} className="mt-6 grid gap-3">
           <input
@@ -56,10 +58,24 @@ export function Login() {
           >
             {loading ? 'Logging in…' : 'Login'}
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = `${API_BASE}/api/auth/google`;
+            }}
+            className="rounded-md border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800"
+          >
+            Continue with Google
+          </button>
         </form>
 
         <div className="mt-4 text-xs text-slate-600">
           No account? <Link className="text-sky-700 hover:text-sky-600" to="/register">Register</Link>
+        </div>
+
+        <div className="mt-2 text-xs text-slate-600">
+          Forgot password? <Link className="text-sky-700 hover:text-sky-600" to="/forgot-password">Reset</Link>
         </div>
       </div>
     </div>

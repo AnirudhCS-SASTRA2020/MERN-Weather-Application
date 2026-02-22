@@ -9,6 +9,10 @@ import { Register } from './pages/Register';
 import { Weekly } from './pages/Weekly';
 import { Region } from './pages/Region';
 import { Country } from './pages/Country';
+import { VerifyEmail } from './pages/VerifyEmail';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
+import { OAuthCallback } from './pages/OAuthCallback';
 
 export default function App() {
   return (
@@ -16,6 +20,10 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
 
         <Route
           element={

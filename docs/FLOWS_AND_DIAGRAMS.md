@@ -18,7 +18,7 @@ sequenceDiagram
   participant OM as Open-Meteo
 
   U->>FE: Use the web app
-  FE->>BE: Call /api endpoints (cookies included)
+  FE->>BE: Call /api endpoints (Bearer access token; refresh cookie when needed)
   BE->>DB: Read/write users and snapshots
   BE->>OM: Fetch weather data (geocode + forecast)
   OM-->>BE: Weather payload
@@ -68,7 +68,7 @@ sequenceDiagram
 
 ---
 
-## 4) Auth flow (register / login / logout / me)
+## 4) Auth flow (csrf / register / login / refresh / logout / me)
 
 ```mermaid
 sequenceDiagram
@@ -78,19 +78,17 @@ sequenceDiagram
   participant BE as Backend
   participant DB as MongoDB
 
+  note over FE,BE: CSRF setup (cookie-based refresh/logout protection)
+  FE->>BE: GET /api/auth/csrf
+  BE-->>FE: {csrfToken} + sets CSRF cookie
+
   note over U,BE: Register
   U->>FE: Submit register form
   FE->>BE: POST /api/auth/register (username,email,phone,password)
-  BE->>BE: Validate gmail address
-  alt Not gmail
-    BE-->>FE: 400 Only gmail.com accounts
-    FE-->>U: Show error
-  else Gmail
-    BE->>DB: Create user (hash password)
-    DB-->>BE: User created
-    BE-->>FE: Set httpOnly JWT cookie + user JSON
-    FE-->>U: Logged in
-  end
+  BE->>DB: Create user (hash password)
+  DB-->>BE: User created
+  BE-->>FE: {user, accessToken} + sets refresh cookie
+  FE-->>U: Logged in (but may be unverified)
 
   note over U,BE: Login
   U->>FE: Submit login form
@@ -100,28 +98,63 @@ sequenceDiagram
     BE-->>FE: 401 Invalid credentials
     FE-->>U: Show error
   else Valid
-    BE-->>FE: Set httpOnly JWT cookie + user JSON
+    BE-->>FE: {user, accessToken} + sets refresh cookie
     FE-->>U: Logged in
   end
 
+  note over FE,BE: Refresh (on page reload)
+  FE->>BE: POST /api/auth/refresh (CSRF header + refresh cookie)
+  BE-->>FE: {user, accessToken} + rotated refresh cookie
+
   note over U,BE: Session check
-  FE->>BE: GET /api/auth/me
-  alt No or invalid cookie
-    BE-->>FE: 401 Not authenticated
-  else Valid cookie
-    BE-->>FE: 200 user JSON
-  end
+  FE->>BE: GET /api/auth/me (Authorization: Bearer accessToken)
+  BE-->>FE: 200 user JSON
 
   note over U,BE: Logout
   U->>FE: Click logout
-  FE->>BE: POST /api/auth/logout
-  BE-->>FE: Clear cookie
+  FE->>BE: POST /api/auth/logout (Authorization + CSRF)
+  BE-->>FE: Revoke session + clear refresh cookie
   FE-->>U: Logged out
+
+  note over U,BE: Email verification
+  FE-->>U: User opens verification link
+  FE->>BE: POST /api/auth/verify-email/confirm {token}
+  BE->>DB: Mark emailVerified=true
+  BE-->>FE: 200 Email verified
 ```
 
 ---
 
-## 5) City forecast flow (authenticated)
+## 5) Google OAuth flow
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant FE as Frontend
+  participant BE as Backend
+  participant G as Google
+  participant DB as MongoDB
+
+  U->>FE: Click "Continue with Google"
+  FE->>BE: GET /api/auth/google
+  BE-->>FE: Redirect to Google consent
+  FE->>G: OAuth authorize
+  G-->>FE: Redirect back with code+state
+  FE->>BE: GET /api/auth/google/callback?code=...&state=...
+  BE->>G: Exchange code for id_token
+  BE->>G: Verify id_token
+  BE->>DB: Auto-link account by email (create if missing)
+  DB-->>BE: User record
+  BE-->>FE: Set refresh cookie + redirect to /oauth/callback
+  FE->>BE: POST /api/auth/refresh
+  BE-->>FE: {user, accessToken}
+  FE-->>U: Logged in
+```
+
+---
+
+## 6) City forecast flow (authenticated)
 
 ```mermaid
 sequenceDiagram
@@ -130,8 +163,8 @@ sequenceDiagram
   participant BE as Backend
   participant OM as Open‑Meteo
 
-  FE->>BE: GET /api/weather/city?query=London (cookie included)
-  BE->>BE: requireAuth (verify JWT)
+  FE->>BE: GET /api/weather/city?query=London (Bearer access token)
+  BE->>BE: requireAuth + requireVerified
   BE->>OM: Geocode city name
   OM-->>BE: Candidate locations
   BE->>OM: Forecast by coordinates
@@ -141,7 +174,7 @@ sequenceDiagram
 
 ---
 
-## 6) Region flow (nearby cities in same country)
+## 7) Region flow (nearby cities in same country)
 
 The backend:
 
@@ -159,7 +192,7 @@ sequenceDiagram
   participant OM as Open-Meteo
 
   FE->>BE: GET /api/weather/region?query=City
-  BE->>BE: requireAuth
+  BE->>BE: requireAuth + requireVerified
   BE->>OM: Geocode query city
   OM-->>BE: Base city (lat, lon, country code)
   BE->>DS: Filter cities in same country
@@ -175,7 +208,7 @@ sequenceDiagram
 
 ---
 
-## 7) Country flow (top cities by population)
+## 8) Country flow (top cities by population)
 
 ```mermaid
 sequenceDiagram
@@ -186,7 +219,7 @@ sequenceDiagram
   participant OM as Open-Meteo
 
   FE->>BE: GET /api/weather/country?query=City
-  BE->>BE: requireAuth
+  BE->>BE: requireAuth + requireVerified
   BE->>OM: Geocode query city
   OM-->>BE: Base city (country code)
   BE->>DS: Get cities for that country
@@ -201,7 +234,7 @@ sequenceDiagram
 
 ---
 
-## 8) Monthly flow (daily snapshots → aggregation)
+## 9) Monthly flow (daily snapshots → aggregation)
 
 Monthly is built on a snapshot strategy:
 
@@ -218,7 +251,7 @@ sequenceDiagram
   participant OM as Open‑Meteo
 
   FE->>BE: GET /api/history/monthly?query=London&months=1
-  BE->>BE: requireAuth (verify JWT)
+  BE->>BE: requireAuth + requireVerified
   BE->>OM: Geocode + forecast to determine coords
   OM-->>BE: Forecast payload
 

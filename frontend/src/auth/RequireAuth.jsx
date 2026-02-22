@@ -17,5 +17,9 @@ export function RequireAuth({ children }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
+  if (user?.role !== 'admin' && !user?.emailVerified && location.pathname !== '/verify-email') {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   return children;
 }

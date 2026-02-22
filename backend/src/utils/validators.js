@@ -2,11 +2,6 @@ const { z } = require('zod');
 
 const emailSchema = z.string().email();
 
-function isGmail(email) {
-  const normalized = String(email || '').trim().toLowerCase();
-  return normalized.endsWith('@gmail.com');
-}
-
 const registerSchema = z.object({
   username: z.string().min(2).max(40),
   email: emailSchema,
@@ -27,9 +22,29 @@ const cityQuerySchema = z.object({
   query: z.string().min(1).max(120),
 });
 
+const verifyEmailConfirmSchema = z.object({
+  token: z.string().min(10).max(500),
+});
+
+const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(10).max(500),
+  newPassword: z.string().min(8).max(72),
+});
+
+const revokeSessionSchema = z.object({
+  sessionId: z.string().min(8).max(200),
+});
+
 module.exports = {
-  isGmail,
   registerSchema,
   loginSchema,
   cityQuerySchema,
+  verifyEmailConfirmSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  revokeSessionSchema,
 };

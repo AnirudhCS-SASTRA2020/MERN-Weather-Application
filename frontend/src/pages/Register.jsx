@@ -43,7 +43,7 @@ export function Register() {
     <div className="min-h-screen grid place-items-center p-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white/80 p-6 text-slate-900 shadow-sm">
         <h1 className="text-2xl font-semibold">Register</h1>
-        <p className="text-xs text-slate-600 mt-1">Only gmail.com emails are allowed</p>
+        <p className="text-xs text-slate-600 mt-1">Create an account to unlock protected views</p>
 
         <form onSubmit={onSubmit} className="mt-6 grid gap-3">
           <input

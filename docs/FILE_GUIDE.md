@@ -5,7 +5,7 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 > Notes
 >
 >- `node_modules/` is intentionally not documented here.
->- If you’re reading this as a PDF, the main setup guide is in `README.md`.
+>- If you’re reading this as a PDF, the main setup guide is in `docs/README.md`.
 
 ---
 
@@ -15,9 +15,9 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 |---|---|
 | `package.json` | Root scripts to run backend + frontend together using `concurrently`. |
 | `package-lock.json` | Lockfile for the root dev dependency (`concurrently`). |
-| `README.md` | Complete start-to-finish documentation (setup, usage, endpoints). |
-| `FILE_GUIDE.md` | This file: explains each important file. |
-| `FLOWS_AND_DIAGRAMS.md` | Mermaid diagrams for the main application flows. |
+| `docs/README.md` | Complete start-to-finish documentation (setup, usage, endpoints). |
+| `docs/FILE_GUIDE.md` | This file: explains each important file. |
+| `docs/FLOWS_AND_DIAGRAMS.md` | Mermaid diagrams for the main application flows. |
 | `docs/pdf.css` | Optional CSS for Markdown → PDF export styling. |
 
 ---
@@ -44,7 +44,8 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 
 | Path | Purpose |
 |---|---|
-| `backend/src/routes/authRoutes.js` | `/api/auth/*` endpoints: register, login, logout, me. |
+| `backend/src/routes/authRoutes.js` | `/api/auth/*` endpoints: csrf, register/login, refresh, logout, email verification, password reset, Google OAuth. |
+| `backend/src/routes/adminRoutes.js` | `/api/admin/*` endpoints (admin only): revoke sessions by session or by user. |
 | `backend/src/routes/weatherRoutes.js` | `/api/weather/*` endpoints: public default, public city, city forecast, region, country. |
 | `backend/src/routes/historyRoutes.js` | `/api/history/*` endpoints: monthly snapshot aggregation. |
 
@@ -52,7 +53,8 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 
 | Path | Purpose |
 |---|---|
-| `backend/src/controllers/authController.js` | Auth logic: gmail check, password hashing, JWT cookie set/clear, `me` response. |
+| `backend/src/controllers/authController.js` | Advanced auth: access/refresh tokens, refresh rotation, sessions, email verification, password reset, Google OAuth auto-link. |
+| `backend/src/controllers/adminController.js` | Admin revocation: revoke by `{userId, sessionId}` and revoke all by `{userId}`. |
 | `backend/src/controllers/weatherController.js` | Weather endpoints for default (NYC), guest city forecast, and authenticated city forecast. |
 | `backend/src/controllers/aggregateController.js` | Region/Country endpoints: selects many cities and fetches current weather with concurrency limits. Uses `all-the-cities`. |
 | `backend/src/controllers/historyController.js` | Monthly endpoint: saves/reads daily snapshots and returns an aggregated view. |
@@ -61,14 +63,21 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 
 | Path | Purpose |
 |---|---|
-| `backend/src/middleware/authMiddleware.js` | `requireAuth` reads the httpOnly JWT cookie and populates `req.user`. |
-| `backend/src/middleware/errorMiddleware.js` | 404 handler + error-to-JSON handler. |
+| `backend/src/middleware/authMiddleware.js` | `requireAuth` validates `Authorization: Bearer <accessToken>` and checks session existence. |
+| `backend/src/middleware/verificationMiddleware.js` | Blocks non-admin users until `emailVerified=true`. |
+| `backend/src/middleware/rbacMiddleware.js` | Role-based access control (`requireRole`). |
+| `backend/src/middleware/csrfMiddleware.js` | Double-submit CSRF cookie + `X-CSRF-Token` header validation. |
+| `backend/src/middleware/rateLimiters.js` | Route-specific limiters (auth/refresh/email). |
+| `backend/src/middleware/requestIdMiddleware.js` | Adds request IDs for tracing (`X-Request-Id`). |
+| `backend/src/middleware/validateMiddleware.js` | Zod validation helper (reusable request validator). |
+| `backend/src/middleware/errorMiddleware.js` | 404 + structured error JSON `{ requestId, code, message, details? }`. |
 
 ### Models (MongoDB)
 
 | Path | Purpose |
 |---|---|
 | `backend/src/models/User.js` | User schema (username, email, phone + password hash). |
+| `backend/src/models/Session.js` | Refresh-session storage (hashed refresh token + revoke fields + TTL). |
 | `backend/src/models/WeatherSnapshot.js` | Daily snapshot schema (per user + coords + date) used for Monthly view. |
 
 ### Services (external API + business logic)
@@ -78,12 +87,20 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 | `backend/src/services/openMeteo.js` | Low-level client for Open‑Meteo geocoding + forecast/current endpoints. |
 | `backend/src/services/weatherService.js` | Normalizes provider responses and caches results to avoid excessive API calls. |
 | `backend/src/services/snapshotService.js` | Upserts and queries `WeatherSnapshot` documents for monthly aggregation. |
+| `backend/src/services/tokenService.js` | Signs/verifies access+refresh JWTs + token hashing helpers. |
+| `backend/src/services/emailService.js` | SMTP2GO email sender for verification + password reset. |
+
+### Scripts
+
+| Path | Purpose |
+|---|---|
+| `backend/src/scripts/seedAdmin.js` | Creates/updates an admin user from env vars (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, ...). |
 
 ### Validation / helpers
 
 | Path | Purpose |
 |---|---|
-| `backend/src/utils/validators.js` | Zod schemas for input validation and helpers like the Gmail check. |
+| `backend/src/utils/validators.js` | Zod schemas for input validation (auth, verification, password reset, revoke). |
 
 ---
 
@@ -100,15 +117,15 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 
 | Path | Purpose |
 |---|---|
-| `frontend/src/api/client.js` | Axios instance pointing at the backend, configured for cookie-based auth (`withCredentials`). |
+| `frontend/src/api/client.js` | Axios instance pointing at the backend (`withCredentials` for refresh cookie); access token is sent via `Authorization` header. |
 
 ### Authentication
 
 | Path | Purpose |
 |---|---|
-| `frontend/src/auth/AuthContext.jsx` | Auth state provider: keeps `user` + `loading`, exposes `register/login/logout/refreshMe`. |
+| `frontend/src/auth/AuthContext.jsx` | Auth provider: stores access token in memory, restores session via `/api/auth/refresh`, sets CSRF header. |
 | `frontend/src/auth/useAuth.jsx` | Hook wrapper (`useAuth`) that reads the context. (Split for React Fast Refresh.) |
-| `frontend/src/auth/RequireAuth.jsx` | Route guard that redirects unauthenticated users to `/login`. |
+| `frontend/src/auth/RequireAuth.jsx` | Route guard that redirects unauthenticated users to `/login` and unverified users to `/verify-email` (admin bypass). |
 
 ### Layout
 
@@ -127,7 +144,11 @@ This document explains the purpose of the key files/folders in the MERN Weather 
 | `frontend/src/pages/Region.jsx` | Multi-city “region” view using `/api/weather/region`. |
 | `frontend/src/pages/Country.jsx` | Multi-city “country” view using `/api/weather/country`. |
 | `frontend/src/pages/Login.jsx` | Login form. |
-| `frontend/src/pages/Register.jsx` | Registration form (gmail-only enforced by backend). |
+| `frontend/src/pages/Register.jsx` | Registration form. |
+| `frontend/src/pages/VerifyEmail.jsx` | Email verification UI (confirm token + resend). |
+| `frontend/src/pages/ForgotPassword.jsx` | Request a password reset email. |
+| `frontend/src/pages/ResetPassword.jsx` | Set a new password using a reset token. |
+| `frontend/src/pages/OAuthCallback.jsx` | Final step after Google OAuth redirect; calls `/api/auth/refresh`. |
 
 ### Components
 

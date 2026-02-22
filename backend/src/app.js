@@ -3,16 +3,44 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
-const morgan = require('morgan');
+const pinoHttp = require('pino-http');
 
 const { env } = require('./config/env');
 const { authRoutes } = require('./routes/authRoutes');
 const { historyRoutes } = require('./routes/historyRoutes');
 const { weatherRoutes } = require('./routes/weatherRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+const { requestId } = require('./middleware/requestIdMiddleware');
+const { adminRoutes } = require('./routes/adminRoutes');
 
 function createApp() {
   const app = express();
+
+  app.disable('x-powered-by');
+  app.set('trust proxy', 1);
+
+  app.use(requestId);
+
+  // Structured request logging
+  app.use(
+    pinoHttp({
+      genReqId: (req) => req.requestId,
+      serializers: {
+        req(req) {
+          return {
+            id: req.id,
+            method: req.method,
+            url: req.url,
+            remoteAddress: req.remoteAddress,
+          };
+        },
+      },
+      redact: {
+        paths: ['req.headers.cookie', 'req.headers.authorization'],
+        remove: true,
+      },
+    })
+  );
 
   // Security Middleware
   app.use(helmet());
@@ -26,9 +54,6 @@ function createApp() {
   // Parse incoming JSON requests
   app.use(express.json({ limit: '50kb' }));
   app.use(cookieParser());
-
-  // Start Logging with Morgan
-  app.use(morgan('combined'));
 
   // Rate Limiting Middleware
   app.use(
@@ -47,6 +72,7 @@ function createApp() {
 
   // API Routes
   app.use('/api/auth', authRoutes);
+  app.use('/api/admin', adminRoutes);
   app.use('/api/history', historyRoutes);
   app.use('/api/weather', weatherRoutes);
 
