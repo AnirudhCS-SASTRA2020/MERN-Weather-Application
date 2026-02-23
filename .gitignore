@@ -5,7 +5,7 @@ frontend/node_modules/
 
 # Env / secrets
 .env
-
+OAuth Credentials.json
 # Builds
 frontend/dist/
 backend/dist/
