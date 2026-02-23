@@ -3,6 +3,7 @@ const { env } = require('../config/env');
 const { AppError } = require('../utils/errors');
 
 let transporter = null;
+let transporterVerified = false;
 
 function getTransporter() {
   if (transporter) return transporter;
@@ -27,9 +28,41 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendMail({ to, subject, text, html }) {
+async function ensureTransporterVerified() {
+  if (transporterVerified) return;
   const tx = getTransporter();
-  await tx.sendMail({ from: env.smtpFrom, to, subject, text, html });
+  try {
+    await tx.verify();
+    transporterVerified = true;
+  } catch (err) {
+    throw new AppError('Email transport verification failed', {
+      statusCode: 500,
+      code: 'EMAIL_TRANSPORT_FAILED',
+      details: {
+        message: err?.message || 'Transport verify failed',
+        responseCode: err?.responseCode,
+        command: err?.command,
+      },
+    });
+  }
+}
+
+async function sendMail({ to, subject, text, html }) {
+  await ensureTransporterVerified();
+  const tx = getTransporter();
+  try {
+    await tx.sendMail({ from: env.smtpFrom, to, subject, text, html });
+  } catch (err) {
+    throw new AppError('Email send failed', {
+      statusCode: 500,
+      code: 'EMAIL_SEND_FAILED',
+      details: {
+        message: err?.message || 'Send failed',
+        responseCode: err?.responseCode,
+        command: err?.command,
+      },
+    });
+  }
 }
 
 async function sendVerifyEmail({ to, token }) {

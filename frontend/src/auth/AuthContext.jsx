@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client';
 
 const AuthContext = createContext(null);
@@ -7,6 +7,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [csrfToken, setCsrfToken] = useState('');
+  const csrfInFlightRef = useRef(null);
+  const refreshInFlightRef = useRef(null);
 
   const setAccessToken = useCallback((token) => {
     if (token) {
@@ -22,18 +24,43 @@ export function AuthProvider({ children }) {
       api.defaults.headers.common['X-CSRF-Token'] = csrfToken;
       return csrfToken;
     }
-    const { data } = await api.get('/api/auth/csrf');
-    setCsrfToken(data.csrfToken);
-    api.defaults.headers.common['X-CSRF-Token'] = data.csrfToken;
-    return data.csrfToken;
+
+    if (csrfInFlightRef.current) {
+      return csrfInFlightRef.current;
+    }
+
+    csrfInFlightRef.current = (async () => {
+      const { data } = await api.get('/api/auth/csrf');
+      setCsrfToken(data.csrfToken);
+      api.defaults.headers.common['X-CSRF-Token'] = data.csrfToken;
+      return data.csrfToken;
+    })();
+
+    try {
+      return await csrfInFlightRef.current;
+    } finally {
+      csrfInFlightRef.current = null;
+    }
   }, [csrfToken]);
 
   const refreshSession = useCallback(async () => {
-    await ensureCsrf();
-    const { data } = await api.post('/api/auth/refresh');
-    setAccessToken(data.accessToken);
-    setUser(data.user);
-    return data.user;
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current;
+    }
+
+    refreshInFlightRef.current = (async () => {
+      await ensureCsrf();
+      const { data } = await api.post('/api/auth/refresh');
+      setAccessToken(data.accessToken);
+      setUser(data.user);
+      return data.user;
+    })();
+
+    try {
+      return await refreshInFlightRef.current;
+    } finally {
+      refreshInFlightRef.current = null;
+    }
   }, [ensureCsrf, setAccessToken]);
 
   const refreshMe = useCallback(async () => {

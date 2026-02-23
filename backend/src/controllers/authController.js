@@ -23,6 +23,18 @@ const {
 const { issueCsrfToken } = require('../middleware/csrfMiddleware');
 const { sendVerifyEmail, sendPasswordResetEmail } = require('../services/emailService');
 
+function deriveUsername({ name, email, googleId }) {
+  const trimmedName = String(name || '').trim();
+  if (trimmedName.length >= 2) return trimmedName;
+
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const localPart = normalizedEmail.includes('@') ? normalizedEmail.split('@')[0].trim() : '';
+  if (localPart.length >= 2) return localPart;
+
+  const suffix = String(googleId || '').slice(-6) || randomToken(3);
+  return `user_${suffix}`;
+}
+
 function refreshCookieOptions() {
   const isProd = env.nodeEnv === 'production';
   return {
@@ -378,6 +390,7 @@ async function googleCallback(req, res, next) {
     if (!email || !googleId) throw new AppError('OAuth failed', { statusCode: 400, code: 'OAUTH_FAILED' });
 
     const normalizedEmail = String(email).toLowerCase();
+    const derivedUsername = deriveUsername({ name, email: normalizedEmail, googleId });
 
     // Auto-link by email.
     let user = await User.findOne({ email: normalizedEmail });
@@ -387,9 +400,12 @@ async function googleCallback(req, res, next) {
       }
       user.googleId = googleId;
       user.emailVerified = true;
+      if (!user.username || String(user.username).trim().length < 2) {
+        user.username = derivedUsername;
+      }
       await user.save();
     } else {
-      const username = name.trim() || normalizedEmail.split('@')[0];
+      const username = derivedUsername;
       user = await User.create({
         username,
         email: normalizedEmail,
